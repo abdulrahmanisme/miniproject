@@ -55,18 +55,28 @@ router.post('/register-challenge', async (req, res) => {
 
 router.post('/register-verify', async (req, res) => {
   try {
+    console.log('Register verify - Request body:', JSON.stringify(req.body, null, 2));
     const { userId, attestationResponse } = req.body;
     const expectedChallenge = challenges.get(userId.toString());
-    if (!expectedChallenge) return res.status(400).json({ message: 'No challenge found' });
+    
+    if (!expectedChallenge) {
+      console.log('No challenge found for userId:', userId);
+      return res.status(400).json({ message: 'No challenge found' });
+    }
 
+    console.log('Verifying with origin:', origin, 'rpID:', rpID);
+    
     const verification = await verifyRegistrationResponse({
       response: attestationResponse,
       expectedChallenge,
-      expectedOrigin: origin,
+      expectedOrigin: [origin], // Must be array
       expectedRPID: rpID,
     });
     
+    console.log('Verification result:', verification.verified);
+    
     if (!verification.verified) {
+      console.log('Verification failed');
       return res.status(400).json({ message: 'Verification failed' });
     }
 
@@ -78,6 +88,7 @@ router.post('/register-verify', async (req, res) => {
     });
     
     challenges.delete(userId.toString());
+    console.log('Biometric registered successfully for user:', userId);
     return res.json({ message: 'Biometric registered successfully' });
   } catch (error) {
     console.error('Register verify error:', error);
@@ -118,7 +129,7 @@ router.post('/auth-verify', async (req, res) => {
     const verification = await verifyAuthenticationResponse({
       response: assertionResponse,
       expectedChallenge,
-      expectedOrigin: origin,
+      expectedOrigin: [origin], // Must be array
       expectedRPID: rpID,
       authenticator: {
         credentialID: Buffer.from(user.credentialId, 'base64url'),
