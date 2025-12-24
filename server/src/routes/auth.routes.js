@@ -21,15 +21,31 @@ router.post('/register', async (req, res) => {
 
 router.post('/login', async (req, res) => {
   try {
+    console.log('Login attempt:', { email: req.body?.email, hasPassword: !!req.body?.password });
     const { email, password } = req.body;
+    
+    if (!email || !password) {
+      console.log('Missing credentials');
+      return res.status(400).json({ message: 'Email and password required' });
+    }
+    
     const user = await User.findOne({ email });
-    if (!user) return res.status(400).json({ message: 'User not found' });
+    if (!user) {
+      console.log('User not found:', email);
+      return res.status(400).json({ message: 'User not found' });
+    }
+    
     const match = await bcrypt.compare(password, user.password);
-    if (!match) return res.status(400).json({ message: 'Bad credentials' });
+    if (!match) {
+      console.log('Password mismatch for:', email);
+      return res.status(400).json({ message: 'Bad credentials' });
+    }
+    
     const token = jwt.sign({ id: user._id, role: user.role, email: user.email }, jwtConfig.secret, {
       expiresIn: jwtConfig.expiresIn,
     });
-    res.cookie('token', token, { httpOnly: true, sameSite: 'lax' });
+    res.cookie('token', token, { httpOnly: true, sameSite: 'none', secure: true });
+    console.log('Login successful:', email);
     return res.json({ 
       id: user._id, 
       role: user.role, 
@@ -38,6 +54,7 @@ router.post('/login', async (req, res) => {
       credentialId: user.credentialId || null
     });
   } catch (e) {
+    console.error('Login error:', e);
     return res.status(500).json({ message: 'Login failed', error: e.message });
   }
 });
