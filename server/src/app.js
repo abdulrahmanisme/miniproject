@@ -10,7 +10,9 @@ import { authRequired, authOptional } from './middleware/authMiddleware.js';
 
 export function createServer() {
   const app = express();
-  app.use(cors({ origin: process.env.CLIENT_URL || 'http://localhost:5173', credentials: true }));
+  // Remove trailing slash from CLIENT_URL to avoid CORS mismatch
+  const clientUrl = (process.env.CLIENT_URL || 'http://localhost:5173').replace(/\/$/, '');
+  app.use(cors({ origin: clientUrl, credentials: true }));
   app.use(cookieParser());
   app.use(express.json());
 
