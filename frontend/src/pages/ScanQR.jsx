@@ -116,13 +116,25 @@ function ScanQR({ user }) {
       console.log('Has credentialId:', !!user.credentialId);
       console.log('WebAuthn supported:', isWebAuthnSupported());
       
-      // Step 1: Verify biometric if supported and registered
-      if (isWebAuthnSupported() && user.credentialId) {
+      // Step 1: Check if biometric is registered
+      if (!user.credentialId) {
+        setError('Please register your biometric first from the Student Dashboard before marking attendance.');
+        setVerifying(false);
+        // Go back to dashboard after 3 seconds
+        setTimeout(() => {
+          navigate('/dashboard');
+        }, 3000);
+        return;
+      }
+      
+      // Step 2: Verify biometric
+      if (isWebAuthnSupported()) {
         console.log('Starting biometric authentication...');
         try {
           const userId = user.id || user._id;
           await authenticateBiometric(userId);
         } catch (bioError) {
+          console.error('Biometric error:', bioError);
           setError('Biometric verification failed. Please try again.');
           setVerifying(false);
           // Restart scanner
@@ -135,7 +147,7 @@ function ScanQR({ user }) {
         }
       }
 
-      // Step 2: Mark attendance
+      // Step 3: Mark attendance
       await markAttendance(token);
       
       // Success! Navigate to success page
