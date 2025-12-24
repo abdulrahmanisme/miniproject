@@ -55,16 +55,41 @@ router.post('/register-challenge', async (req, res) => {
 
 router.post('/register-verify', async (req, res) => {
   try {
-    console.log('Register verify - Request body:', JSON.stringify(req.body, null, 2));
-    const { userId, attestationResponse } = req.body;
-    const expectedChallenge = challenges.get(userId.toString());
+    console.log('=== REGISTER VERIFY START ===');
+    console.log('Request body:', req.body);
+    console.log('Request body type:', typeof req.body);
+    console.log('Request body keys:', req.body ? Object.keys(req.body) : 'NO BODY');
+    console.log('UserId:', req.body?.userId);
+    console.log('Has attestationResponse:', !!req.body?.attestationResponse);
+    
+    const { userId, attestationResponse } = req.body || {};
+    
+    if (!userId) {
+      console.log('❌ UserId is missing or undefined');
+      return res.status(400).json({ message: 'userId is required' });
+    }
+    
+    if (!attestationResponse) {
+      console.log('❌ attestationResponse is missing');
+      return res.status(400).json({ message: 'attestationResponse is required' });
+    }
+    
+    const userIdString = userId.toString();
+    console.log('Looking for challenge with key:', userIdString);
+    const expectedChallenge = challenges.get(userIdString);
     
     if (!expectedChallenge) {
-      console.log('No challenge found for userId:', userId);
-      return res.status(400).json({ message: 'No challenge found' });
+      console.log('❌ No challenge found for userId:', userIdString);
+      console.log('Available challenges:', Array.from(challenges.keys()));
+      return res.status(400).json({ message: 'No challenge found. Please try again from the beginning.' });
     }
 
-    console.log('Verifying with origin:', origin, 'rpID:', rpID);
+    console.log('✓ Challenge found');
+    console.log('Origin (env):', process.env.ORIGIN);
+    console.log('Origin (config):', origin);
+    console.log('RP_ID (env):', process.env.RP_ID);
+    console.log('RP_ID (config):', rpID);
+    console.log('Expected Origin Array:', [origin]);
     
     const verification = await verifyRegistrationResponse({
       response: attestationResponse,
@@ -73,10 +98,10 @@ router.post('/register-verify', async (req, res) => {
       expectedRPID: rpID,
     });
     
-    console.log('Verification result:', verification.verified);
+    console.log('✓ Verification result:', verification.verified);
     
     if (!verification.verified) {
-      console.log('Verification failed');
+      console.log('❌ Verification returned false');
       return res.status(400).json({ message: 'Verification failed' });
     }
 
@@ -87,12 +112,13 @@ router.post('/register-verify', async (req, res) => {
       publicKey: Buffer.from(credentialPublicKey).toString('base64url'),
     });
     
-    challenges.delete(userId.toString());
-    console.log('Biometric registered successfully for user:', userId);
+    challenges.delete(userIdString);
+    console.log('✅ Biometric registered successfully for user:', userId);
     return res.json({ message: 'Biometric registered successfully' });
   } catch (error) {
-    console.error('Register verify error:', error);
-    return res.status(500).json({ message: 'Verification failed', error: error.message });
+    console.error('❌ Register verify error:', error.message);
+    console.error('Error stack:', error.stack);
+    return res.status(500).json({ message: 'Verification failed', error: error.message, stack: error.stack });
   }
 });
 
