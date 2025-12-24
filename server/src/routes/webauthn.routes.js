@@ -39,6 +39,7 @@ router.post('/register-challenge', async (req, res) => {
       userDisplayName: user.name,
       attestationType: 'none',
       authenticatorSelection: {
+        authenticatorAttachment: 'platform', // Force Windows Hello / built-in biometrics
         residentKey: 'preferred',
         userVerification: 'preferred',
       },
