@@ -6,13 +6,34 @@ dotenv.config();
 
 const PORT = process.env.PORT || 4000;
 
-async function start() {
-  await connectDB();
-  const app = createServer();
-  app.listen(PORT, () => console.log(`API running on port ${PORT}`));
+// Initialize database connection
+let isConnected = false;
+
+async function ensureDbConnection() {
+  if (!isConnected) {
+    await connectDB();
+    isConnected = true;
+  }
 }
 
-start().catch((err) => {
-  console.error('Startup error', err);
-  process.exit(1);
-});
+// For Vercel serverless
+const app = createServer();
+
+// Vercel serverless handler
+export default async function handler(req, res) {
+  await ensureDbConnection();
+  return app(req, res);
+}
+
+// For local development
+if (process.env.NODE_ENV !== 'production') {
+  async function start() {
+    await connectDB();
+    app.listen(PORT, () => console.log(`API running on port ${PORT}`));
+  }
+
+  start().catch((err) => {
+    console.error('Startup error', err);
+    process.exit(1);
+  });
+}
