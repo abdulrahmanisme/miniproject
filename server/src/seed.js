@@ -14,7 +14,10 @@ async function seed() {
     { name: 'Tom Teacher', email: 'teacher@example.com', password, role: 'teacher' },
     { name: 'Amy Admin', email: 'admin@example.com', password, role: 'admin' },
   ]);
-  console.log('Seeded users');
+  console.log('✅ Seeded users successfully!');
+  console.log('Student: student@example.com / password123');
+  console.log('Teacher: teacher@example.com / password123');
+  console.log('Admin: admin@example.com / password123');
   process.exit();
 }
 

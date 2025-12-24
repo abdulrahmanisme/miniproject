@@ -5,6 +5,7 @@ import authRoutes from './routes/auth.routes.js';
 import lectureRoutes from './routes/lecture.routes.js';
 import attendanceRoutes from './routes/attendance.routes.js';
 import webauthnRoutes from './routes/webauthn.routes.js';
+import adminRoutes from './routes/admin.routes.js';
 import { authRequired, authOptional } from './middleware/authMiddleware.js';
 
 export function createServer() {
@@ -19,6 +20,7 @@ export function createServer() {
   app.use('/webauthn', authOptional, webauthnRoutes);
   app.use('/lecture', authRequired, lectureRoutes);
   app.use('/attendance', authRequired, attendanceRoutes);
+  app.use('/admin', adminRoutes);
 
   return app;
 }

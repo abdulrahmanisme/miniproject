@@ -30,7 +30,13 @@ router.post('/login', async (req, res) => {
       expiresIn: jwtConfig.expiresIn,
     });
     res.cookie('token', token, { httpOnly: true, sameSite: 'lax' });
-    return res.json({ id: user._id, role: user.role, email: user.email });
+    return res.json({ 
+      id: user._id, 
+      role: user.role, 
+      email: user.email,
+      name: user.name,
+      credentialId: user.credentialId || null
+    });
   } catch (e) {
     return res.status(500).json({ message: 'Login failed', error: e.message });
   }
