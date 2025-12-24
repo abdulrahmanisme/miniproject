@@ -5,7 +5,11 @@
   "main": "server.js",
   "scripts": {
     "dev": "node server.js",
+    "start": "node server.js",
     "seed": "node src/seed.js"
+  },
+  "engines": {
+    "node": ">=18.x"
   },
   "dependencies": {
     "@simplewebauthn/server": "^10.0.0",
