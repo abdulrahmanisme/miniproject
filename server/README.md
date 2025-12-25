@@ -29,7 +29,7 @@ Production-ready Node.js + Express API for attendance management.
 Add these in Vercel Dashboard → Settings → Environment Variables:
 
 ```
-MONGO_URI=mongodb+srv://arahmanforge_db_user:516XeLQSXWYuzHUT@bioattendance.oyna1wl.mongodb.net/attendance
+MONGO_URI=mongodb+srv://<username>:<password>@<cluster>.mongodb.net/<database>
 JWT_SECRET=your-strong-production-secret-here
 CLIENT_URL=https://your-frontend.vercel.app
 ORIGIN=https://your-frontend.vercel.app

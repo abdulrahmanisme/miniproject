@@ -62,8 +62,8 @@ npm install
 
 **Backend** (`server/.env` - already configured):
 ```env
-MONGO_URI=mongodb+srv://arahmanforge_db_user:516XeLQSXWYuzHUT@bioattendance.oyna1wl.mongodb.net/attendance
-JWT_SECRET=devsecret
+MONGO_URI=mongodb+srv://<username>:<password>@<cluster>.mongodb.net/<database>
+JWT_SECRET=your-secret-key-here
 CLIENT_URL=http://localhost:5173
 ORIGIN=http://localhost:5173
 RP_ID=localhost
