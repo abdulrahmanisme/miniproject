@@ -134,7 +134,7 @@ router.post('/auth-challenge', async (req, res) => {
       rpID,
       allowCredentials: [
         {
-          id: user.credentialId, // Already a base64url string in DB
+          id: Buffer.from(user.credentialId, 'base64url'), // Convert string to buffer
           type: 'public-key',
         },
       ],
