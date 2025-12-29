@@ -10,6 +10,7 @@ function ScanQR({ user }) {
   const [error, setError] = useState('');
   const [scannedToken, setScannedToken] = useState(null);
   const [verifying, setVerifying] = useState(false);
+  const [showSkipOption, setShowSkipOption] = useState(false); // Show skip button on biometric error
   const scannerRef = useRef(null);
   const html5QrCodeRef = useRef(null);
   const scannerInitialized = useRef(false);
@@ -31,6 +32,7 @@ function ScanQR({ user }) {
     try {
       setScanning(true);
       setError('');
+      setShowSkipOption(false); // Reset skip option
 
       const html5QrCode = new Html5Qrcode('qr-reader');
       html5QrCodeRef.current = html5QrCode;
@@ -103,8 +105,8 @@ function ScanQR({ user }) {
     await stopScanner();
     setScannedToken(decodedText);
     
-    // Process the scanned token
-    await processAttendance(decodedText);
+    // Process the scanned token (don't skip biometric by default)
+    await processAttendance(decodedText, false);
   };
 
   const onScanError = (errorMessage) => {
@@ -115,56 +117,64 @@ function ScanQR({ user }) {
     }
   };
 
-  const processAttendance = async (token) => {
+  const processAttendance = async (token, skipBiometric = false) => {
     setVerifying(true);
     setError('');
+    setShowSkipOption(false); // Reset skip option
 
     try {
       console.log('User object:', user);
       console.log('Has credentialId:', !!user.credentialId);
       console.log('WebAuthn supported:', isWebAuthnSupported());
+      console.log('Skip biometric:', skipBiometric);
       
-      // Step 1: Check if biometric is registered
-      if (!user.credentialId) {
-        setError('Please register your biometric first from the Student Dashboard before marking attendance.');
+      // Step 1: Check if biometric is registered (skip if skipBiometric is true)
+      if (!skipBiometric && !user.credentialId) {
+        setError('No biometric registered on this device. Use "Skip Biometric" to continue testing.');
         setVerifying(false);
-        processingRef.current = false; // Reset flag
-        // Go back to dashboard after 3 seconds
-        setTimeout(() => {
-          navigate('/dashboard');
-        }, 3000);
+        setShowSkipOption(true); // Show skip button
         return;
       }
       
-      // Step 2: Verify biometric
-      if (isWebAuthnSupported()) {
+      // Step 2: Verify biometric (skip if skipBiometric is true)
+      if (!skipBiometric && isWebAuthnSupported() && user.credentialId) {
         console.log('Starting biometric authentication...');
         try {
           const userId = user.id || user._id;
           await authenticateBiometric(userId);
+          console.log('Biometric authentication successful!');
         } catch (bioError) {
           console.error('Biometric error:', bioError);
-          setError('Biometric verification failed. Please try again.');
+          
+          // Check if it's a "no passkeys" error
+          const errorMessage = bioError.message || bioError.toString();
+          if (errorMessage.includes('passkey') || errorMessage.includes('credential') || errorMessage.includes('NotAllowedError')) {
+            setError('No passkeys available on this device. This biometric was registered on a different device. Use "Skip Biometric" to test.');
+            setShowSkipOption(true); // Show skip button
+          } else {
+            setError('Biometric verification failed. Try again or skip for testing.');
+            setShowSkipOption(true); // Show skip button
+          }
+          
           setVerifying(false);
-          // Reset processing flag and restart scanner
-          processingRef.current = false;
-          setTimeout(async () => {
-            setScannedToken(null);
-            scannerInitialized.current = false;
-            await startScanner();
-          }, 2000);
           return;
         }
+      } else if (skipBiometric) {
+        console.log('⚠️ TESTING MODE: Biometric verification skipped');
       }
 
       // Step 3: Mark attendance
+      console.log('Marking attendance...');
       await markAttendance(token);
       
       // Success! Navigate to success page
+      console.log('✅ Attendance marked successfully!');
       navigate('/success');
     } catch (err) {
+      console.error('Attendance marking error:', err);
       setError(err.response?.data?.message || 'Failed to mark attendance. The QR code may be expired.');
       setVerifying(false);
+      setShowSkipOption(false);
       
       // Reset processing flag and restart scanner after error
       processingRef.current = false;
@@ -173,6 +183,14 @@ function ScanQR({ user }) {
         scannerInitialized.current = false;
         await startScanner();
       }, 3000);
+    }
+  };
+
+  // Handler for skip biometric button
+  const handleSkipBiometric = async () => {
+    if (scannedToken) {
+      setShowSkipOption(false);
+      await processAttendance(scannedToken, true); // true = skip biometric
     }
   };
 
@@ -232,6 +250,31 @@ function ScanQR({ user }) {
           {error && (
             <div className="p-4 bg-red-50 border border-red-200 rounded-lg mb-4 animate-slide-up">
               <p className="text-red-800 font-medium">{error}</p>
+              
+              {/* Show Skip Biometric button when there's a biometric error */}
+              {showSkipOption && (
+                <div className="mt-4 space-y-2">
+                  <button
+                    onClick={handleSkipBiometric}
+                    className="w-full px-4 py-3 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-lg transition-colors"
+                  >
+                    🧪 Skip Biometric (Testing Mode)
+                  </button>
+                  <button
+                    onClick={async () => {
+                      setShowSkipOption(false);
+                      setError('');
+                      processingRef.current = false;
+                      setScannedToken(null);
+                      scannerInitialized.current = false;
+                      await startScanner();
+                    }}
+                    className="w-full px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium rounded-lg transition-colors"
+                  >
+                    Try Again
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
