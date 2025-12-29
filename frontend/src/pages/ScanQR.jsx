@@ -13,6 +13,7 @@ function ScanQR({ user }) {
   const scannerRef = useRef(null);
   const html5QrCodeRef = useRef(null);
   const scannerInitialized = useRef(false);
+  const processingRef = useRef(false); // Flag to prevent duplicate scans
 
   useEffect(() => {
     // Prevent double initialization in React StrictMode
@@ -89,9 +90,16 @@ function ScanQR({ user }) {
   };
 
   const onScanSuccess = async (decodedText) => {
+    // Prevent re-entry while processing
+    if (processingRef.current) {
+      console.log('Already processing QR code, ignoring duplicate scan');
+      return;
+    }
+    
+    processingRef.current = true;
     console.log('QR Code detected:', decodedText);
     
-    // Stop scanning once QR is detected
+    // Stop scanning immediately
     await stopScanner();
     setScannedToken(decodedText);
     
@@ -120,6 +128,7 @@ function ScanQR({ user }) {
       if (!user.credentialId) {
         setError('Please register your biometric first from the Student Dashboard before marking attendance.');
         setVerifying(false);
+        processingRef.current = false; // Reset flag
         // Go back to dashboard after 3 seconds
         setTimeout(() => {
           navigate('/dashboard');
@@ -137,7 +146,8 @@ function ScanQR({ user }) {
           console.error('Biometric error:', bioError);
           setError('Biometric verification failed. Please try again.');
           setVerifying(false);
-          // Restart scanner
+          // Reset processing flag and restart scanner
+          processingRef.current = false;
           setTimeout(async () => {
             setScannedToken(null);
             scannerInitialized.current = false;
@@ -156,7 +166,8 @@ function ScanQR({ user }) {
       setError(err.response?.data?.message || 'Failed to mark attendance. The QR code may be expired.');
       setVerifying(false);
       
-      // Restart scanner after error
+      // Reset processing flag and restart scanner after error
+      processingRef.current = false;
       setTimeout(async () => {
         setScannedToken(null);
         scannerInitialized.current = false;
