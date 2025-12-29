@@ -105,7 +105,7 @@ function ScanQR({ user }) {
     await stopScanner();
     setScannedToken(decodedText);
     
-    // Process the scanned token (SKIP biometric for testing)
+    // Process the scanned token (SKIP BIOMETRIC FOR TESTING)
     await processAttendance(decodedText, true);
   };
 
