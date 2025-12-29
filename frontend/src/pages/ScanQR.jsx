@@ -105,8 +105,8 @@ function ScanQR({ user }) {
     await stopScanner();
     setScannedToken(decodedText);
     
-    // Process the scanned token (don't skip biometric by default)
-    await processAttendance(decodedText, false);
+    // Process the scanned token (SKIP biometric for testing)
+    await processAttendance(decodedText, true);
   };
 
   const onScanError = (errorMessage) => {
@@ -117,51 +117,18 @@ function ScanQR({ user }) {
     }
   };
 
-  const processAttendance = async (token, skipBiometric = false) => {
+  const processAttendance = async (token, skipBiometric = true) => {
     setVerifying(true);
     setError('');
     setShowSkipOption(false); // Reset skip option
 
     try {
       console.log('User object:', user);
-      console.log('Has credentialId:', !!user.credentialId);
-      console.log('WebAuthn supported:', isWebAuthnSupported());
       console.log('Skip biometric:', skipBiometric);
+      console.log('⚠️ TESTING MODE: Skipping biometric verification');
       
-      // Step 1: Check if biometric is registered (skip if skipBiometric is true)
-      if (!skipBiometric && !user.credentialId) {
-        setError('No biometric registered on this device. Use "Skip Biometric" to continue testing.');
-        setVerifying(false);
-        setShowSkipOption(true); // Show skip button
-        return;
-      }
-      
-      // Step 2: Verify biometric (skip if skipBiometric is true)
-      if (!skipBiometric && isWebAuthnSupported() && user.credentialId) {
-        console.log('Starting biometric authentication...');
-        try {
-          const userId = user.id || user._id;
-          await authenticateBiometric(userId);
-          console.log('Biometric authentication successful!');
-        } catch (bioError) {
-          console.error('Biometric error:', bioError);
-          
-          // Check if it's a "no passkeys" error
-          const errorMessage = bioError.message || bioError.toString();
-          if (errorMessage.includes('passkey') || errorMessage.includes('credential') || errorMessage.includes('NotAllowedError')) {
-            setError('No passkeys available on this device. This biometric was registered on a different device. Use "Skip Biometric" to test.');
-            setShowSkipOption(true); // Show skip button
-          } else {
-            setError('Biometric verification failed. Try again or skip for testing.');
-            setShowSkipOption(true); // Show skip button
-          }
-          
-          setVerifying(false);
-          return;
-        }
-      } else if (skipBiometric) {
-        console.log('⚠️ TESTING MODE: Biometric verification skipped');
-      }
+      // TESTING MODE: Skip all biometric checks
+      // Step 1 & 2: Biometric checks disabled for testing
 
       // Step 3: Mark attendance
       console.log('Marking attendance...');
